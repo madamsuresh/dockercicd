@@ -1,0 +1,32 @@
+node
+{
+ def mavenHome = "/home/ubuntu/.jenkins/tools/hudson.tasks.Maven_MavenInstallation/maven_3.8.4"
+ def dockerpassword = "Suresh@123"
+ stage('code check out')
+ {
+  git credentialsId: '90939e1e-4faa-46d8-b39b-d9bc24040c56', url: 'https://github.com/madamsuresh/spring-boot-mongo-docker.git'
+ }
+ stage('Build artifact')
+ {
+  sh "${mavenHome}/bin/mvn clean package"
+ }
+ stage('docker image')
+ {
+  sh "docker build -t madamsuresh/spring ."
+ }
+ stage('docker login')
+ {
+  sh"docker login -u madamsuresh -p ${dockerpassword}"
+ }
+ stage('docker push')
+ {
+ sh "docker push madamsuresh/spring"
+ }
+ stage('start container')
+ {
+ sshagent(['8e25e58b-1583-4e1c-b855-17ae79b3dd9d']) {
+ sh "ssh -o StrictHostKeyChecking=no ubuntu@3.109.185.192 docker rm -f container1 || true"
+ sh "ssh -o StrictHostKeyChecking=no ubuntu@3.109.185.192 docker run --name container1 -d -p 8080:8080 madamsuresh/spring"
+ }
+ }
+}
